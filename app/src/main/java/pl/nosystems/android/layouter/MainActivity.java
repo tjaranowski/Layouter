@@ -1,30 +1,31 @@
 package pl.nosystems.android.layouter;
 
+import android.content.Context;
+import android.os.Bundle;
+import android.util.AttributeSet;
+import android.view.View;
+import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.Context;
-import android.os.Bundle;
-import android.util.AttributeSet;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-
-import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
-import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import pl.nosystems.android.layouter.core.ViewHierarchyElement;
+import pl.nosystems.android.layouter.core.ViewHierarchyElementReconstructor;
+import pl.nosystems.android.layouter.dom4j.LayouterDom4J;
 
 public class MainActivity extends AppCompatActivity {
-    private static String TAG = MainActivity.class.getSimpleName();
 
     private static final String TEST_LAYOUT = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
             "<androidx.constraintlayout.widget.ConstraintLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\n" +
@@ -49,107 +50,55 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
+        setContentView(R.layout.layout_content_container);
 
-    @Override
-    public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+        reconstructors.add(new TextReconstructor());
 
-        printAttributeSetForView(name, attrs);
+        final ViewGroup viewGroup = findViewById(R.id.contentContainer);
+        SAXReader saxReader = new SAXReader();
+        try {
+            Document document = saxReader.read(new ByteArrayInputStream(TEST_LAYOUT.getBytes(StandardCharsets.UTF_8)));
 
-        View view;
-        if(isFullyQualifiedName(name)) {
-            view = createInstanceForViewName(name, attrs);
-        } else {
-            view = createInstanceForAndroidViewName(name, attrs);
-        }
+            ViewHierarchyElement viewHierarchyElement = LayouterDom4J.createElementsFromDom4JDocument(document);
 
-        if(view.getId() == android.R.id.content) {
-            SAXReader saxReader = new SAXReader();
-            try {
-                Document document = saxReader.read(new ByteArrayInputStream(TEST_LAYOUT.getBytes(StandardCharsets.UTF_8)));
-                Element rootElement = document.getRootElement();
+            // FIXME: is return value needed? <- currently will add to viewGroup anyways/........
+            parseElementIntoView(viewHierarchyElement, viewGroup);
 
-                return parseElementIntoView(rootElement, (ViewGroup) view);
-               
-            } catch (DocumentException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        return view;
-    }
-    
-    private ViewGroup parseElementIntoView(Element rootElement,
-                                           ViewGroup container) {
-
-        printAttributesForElement(rootElement);
-
-        String rootName = rootElement.getName();
-        View root;
-        if(isFullyQualifiedName(rootName)) {
-            root = createInstanceForViewName(rootName, null);
-        } else {
-            root = createInstanceForAndroidViewName(rootName, null);
-        }
-
-        if("TextView".equalsIgnoreCase(rootName)) {
-            TextView textView = (TextView) root;
-            Attribute text = rootElement.attribute("text");
-
-            if(text != null) {
-                textView.setText(text.getValue());
-
-
-                ((TextView)root).setText(text.getValue());
-            }
-
-            Attribute layoutWidth = rootElement.attribute("layout_width");
-            if(layoutWidth != null) {
-                ViewGroup.LayoutParams layoutParams = textView.getLayoutParams();
-                if(layoutParams == null) {
-                    layoutParams = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    textView.setLayoutParams(layoutParams);
-                }
-                layoutParams.width = "wrap_content".equalsIgnoreCase(layoutWidth.getValue()) ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.MATCH_PARENT;
-                textView.setLayoutParams(layoutParams);
-            }
-
-            Attribute layoutHeight = rootElement.attribute("layout_height");
-            if(layoutHeight != null) {
-                ViewGroup.LayoutParams layoutParams = textView.getLayoutParams();
-                layoutParams.height = "wrap_content".equalsIgnoreCase(layoutHeight.getValue()) ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.MATCH_PARENT;
-                textView.setLayoutParams(layoutParams);
-            }
-        }
-        
-        container.addView(root);
-
-        for(Element element : rootElement.elements()) {
-            parseElementIntoView(element, (ViewGroup) root);
-        }
-
-        return container;
-    }
-
-    private void printAttributesForElement(Element rootElement) {
-        Log.d(TAG, "Element: " + rootElement.getName());
-
-        for(Attribute attribute : rootElement.attributes()) {
-            Log.d(TAG, "  Attribute: " + attribute.getName() + " : " + attribute.getValue());
+        } catch (DocumentException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void printAttributeSetForView(@NonNull String name,@NonNull AttributeSet attrs) {
-        Log.d(TAG, "Attributes for view " + name);
+    private final List<ViewHierarchyElementReconstructor> reconstructors = new ArrayList<>();
 
-        for (int i = 0; i < attrs.getAttributeCount(); i++) {
-            Log.d(TAG, "  attribute " + (i+1) + ":" + attrs.getAttributeName(i));
-            Log.d(TAG, "  attribute value: " + attrs.getAttributeValue(i));
+    @NonNull
+    private void parseElementIntoView(@NonNull ViewHierarchyElement element,
+                                      @NonNull ViewGroup container) {
+
+        final View elementView = createElementViewForElement(element);
+
+        for (ViewHierarchyElementReconstructor reconstructor : reconstructors) {
+            reconstructor.reconstruct(element, elementView);
         }
+
+        if(elementView instanceof ViewGroup) {
+            for (ViewHierarchyElement child : element.getChildren()) {
+                parseElementIntoView(child, (ViewGroup) elementView);
+            }
+        }
+
+        container.addView(elementView);
     }
 
     @NonNull
-    private View createInstanceForViewName(@NonNull String name, @Nullable AttributeSet attributeSet) {
+    private View createElementViewForElement(@NonNull ViewHierarchyElement viewHierarchyElement) {
+        String rootName = viewHierarchyElement.getFullyQualifiedName();
+        return createInstanceForViewName(rootName, null);
+    }
+
+    @NonNull
+    private View createInstanceForViewName(@NonNull String name,
+                                           @Nullable AttributeSet attributeSet) {
         try {
             Class rootClass = Class.forName(name);
             Constructor[] constructors = rootClass.getConstructors();
@@ -161,49 +110,9 @@ public class MainActivity extends AppCompatActivity {
                     return (View) c.newInstance(this, attributeSet);
                 }
             }
-        } catch (InstantiationException|InvocationTargetException|IllegalAccessException|ClassNotFoundException e) {
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
         throw new RuntimeException();
-    }
-
-    @NonNull
-    private View createInstanceForAndroidViewName(@NonNull String name, @Nullable AttributeSet attributeSet) {
-        Class rootClass = null;
-
-        try {
-            rootClass = Class.forName("android.widget." + name);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-
-        if(rootClass == null) {
-            try {
-                rootClass = Class.forName("android.view." + name);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-
-        try {
-            Constructor[] constructors = rootClass.getConstructors();
-
-            for (Constructor c : constructors) {
-                if (c.getParameterCount() == 2
-                        && c.getParameterTypes()[0] == Context.class
-                        && c.getParameterTypes()[1] == AttributeSet.class) {
-                    return (View) c.newInstance(this, attributeSet);
-                }
-            }
-        } catch (InstantiationException|InvocationTargetException|IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        throw new RuntimeException();
-    }
-
-    private boolean isFullyQualifiedName(@NonNull String name) {
-        return name.contains(".");
     }
 }
