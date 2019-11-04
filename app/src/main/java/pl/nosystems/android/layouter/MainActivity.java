@@ -3,26 +3,20 @@ package pl.nosystems.android.layouter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.content.Context;
-import android.content.res.Resources;
-import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
-import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
-import org.w3c.dom.Attr;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Constructor;
@@ -75,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
                 Document document = saxReader.read(new ByteArrayInputStream(TEST_LAYOUT.getBytes(StandardCharsets.UTF_8)));
                 Element rootElement = document.getRootElement();
 
-                return foo(rootElement, (ViewGroup) view);
+                return parseElementIntoView(rootElement, (ViewGroup) view);
                
             } catch (DocumentException e) {
                 throw new RuntimeException(e);
@@ -85,7 +79,8 @@ public class MainActivity extends AppCompatActivity {
         return view;
     }
     
-    private ViewGroup foo(Element rootElement, ViewGroup container) {
+    private ViewGroup parseElementIntoView(Element rootElement,
+                                           ViewGroup container) {
 
         printAttributesForElement(rootElement);
 
@@ -130,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
         container.addView(root);
 
         for(Element element : rootElement.elements()) {
-            foo(element, (ViewGroup) root);
+            parseElementIntoView(element, (ViewGroup) root);
         }
 
         return container;
