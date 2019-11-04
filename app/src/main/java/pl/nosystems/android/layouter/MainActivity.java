@@ -24,35 +24,33 @@ import java.util.List;
 import pl.nosystems.android.layouter.core.ViewHierarchyElement;
 import pl.nosystems.android.layouter.core.ViewHierarchyElementReconstructor;
 import pl.nosystems.android.layouter.dom4j.LayouterDom4J;
+import pl.nosystems.android.layouter.reconstructors.core.TextViewReconstructor;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TEST_LAYOUT = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-            "<androidx.constraintlayout.widget.ConstraintLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\n" +
-            "    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\n" +
+            "<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\n" +
             "    xmlns:tools=\"http://schemas.android.com/tools\"\n" +
             "    android:layout_width=\"match_parent\"\n" +
             "    android:layout_height=\"match_parent\"\n" +
             "    tools:context=\".MainActivity\">\n" +
             "\n" +
             "    <TextView\n" +
-            "        android:layout_width=\"wrap_content\"\n" +
-            "        android:layout_height=\"wrap_content\"\n" +
+            "        android:layout_width=\"match_parent\"\n" +
+            "        android:layout_height=\"match_parent\"\n" +
+            "        android:layout_gravity=\"center\"\n" +
+            "        android:gravity=\"center\"\n" +
             "        android:text=\"Hello World!\"\n" +
-            "        android:textSize=\"100px\"\n" +
-            "        app:layout_constraintBottom_toBottomOf=\"parent\"\n" +
-            "        app:layout_constraintLeft_toLeftOf=\"parent\"\n" +
-            "        app:layout_constraintRight_toRightOf=\"parent\"\n" +
-            "        app:layout_constraintTop_toTopOf=\"parent\" />\n" +
+            "        android:textSize=\"48sp\" />\n" +
             "\n" +
-            "</androidx.constraintlayout.widget.ConstraintLayout>";
+            "</LinearLayout>";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_content_container);
 
-        reconstructors.add(new TextReconstructor());
+        reconstructors.add(new TextViewReconstructor());
 
         final ViewGroup viewGroup = findViewById(R.id.contentContainer);
         SAXReader saxReader = new SAXReader();
@@ -71,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
 
     private final List<ViewHierarchyElementReconstructor> reconstructors = new ArrayList<>();
 
-    @NonNull
     private void parseElementIntoView(@NonNull ViewHierarchyElement element,
                                       @NonNull ViewGroup container) {
 
