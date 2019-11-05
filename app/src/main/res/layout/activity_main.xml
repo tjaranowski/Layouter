@@ -17,6 +17,8 @@
         android:gravity="left"
         android:layout_gravity="left"
         android:text="Switch"
+        android:track="@mipmap/ic_launcher_round"
+        android:thumbTint="@color/colorPrimary"
         android:thumb="@mipmap/ic_launcher"/>
 
     <TextView

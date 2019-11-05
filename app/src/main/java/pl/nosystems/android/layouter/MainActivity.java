@@ -51,7 +51,8 @@ public class MainActivity extends AppCompatActivity {
             "        android:layout_height=\"wrap_content\"\n" +
             "        android:gravity=\"left\"\n" +
             "        android:layout_gravity=\"left\"\n" +
-            "        android:text=\"Switch\" />\n" +
+            "        android:thumbTint=\"@color/colorPrimary\"" +
+            "        android:thumb=\"@mipmap/ic_launcher\"/>\n" +
             "\n" +
             "    <TextView\n" +
             "        android:layout_width=\"match_parent\"\n" +
