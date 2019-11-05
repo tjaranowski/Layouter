@@ -21,9 +21,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import pl.nosystems.android.layouter.core.Layouter;
 import pl.nosystems.android.layouter.core.ViewHierarchyElement;
 import pl.nosystems.android.layouter.core.ViewHierarchyElementReconstructor;
 import pl.nosystems.android.layouter.dom4j.LayouterDom4J;
+import pl.nosystems.android.layouter.reconstructors.core.LinearLayoutViewReconstructor;
 import pl.nosystems.android.layouter.reconstructors.core.TextViewReconstructor;
 
 public class MainActivity extends AppCompatActivity {
@@ -33,7 +35,12 @@ public class MainActivity extends AppCompatActivity {
             "    xmlns:tools=\"http://schemas.android.com/tools\"\n" +
             "    android:layout_width=\"match_parent\"\n" +
             "    android:layout_height=\"match_parent\"\n" +
+            "    android:orientation=\"vertical\"\n" +
             "    tools:context=\".MainActivity\">\n" +
+            "\n" +
+            "    <EditText\n" +
+            "        android:layout_width=\"match_parent\"\n" +
+            "        android:layout_height=\"64dp\" />\n" +
             "\n" +
             "    <TextView\n" +
             "        android:layout_width=\"match_parent\"\n" +
@@ -45,12 +52,18 @@ public class MainActivity extends AppCompatActivity {
             "\n" +
             "</LinearLayout>";
 
+
+    private final List<ViewHierarchyElementReconstructor> reconstructors = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_content_container);
 
-        reconstructors.add(new TextViewReconstructor());
+        final float displayDensity = getResources().getDisplayMetrics().density;
+
+        reconstructors.add(new TextViewReconstructor(displayDensity));
+        reconstructors.add(new LinearLayoutViewReconstructor(displayDensity));
 
         final ViewGroup viewGroup = findViewById(R.id.contentContainer);
         SAXReader saxReader = new SAXReader();
@@ -60,56 +73,10 @@ public class MainActivity extends AppCompatActivity {
             ViewHierarchyElement viewHierarchyElement = LayouterDom4J.createElementsFromDom4JDocument(document);
 
             // FIXME: is return value needed? <- currently will add to viewGroup anyways/........
-            parseElementIntoView(viewHierarchyElement, viewGroup);
+            Layouter.parseElementIntoView(viewHierarchyElement, reconstructors, viewGroup, this);
 
         } catch (DocumentException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private final List<ViewHierarchyElementReconstructor> reconstructors = new ArrayList<>();
-
-    private void parseElementIntoView(@NonNull ViewHierarchyElement element,
-                                      @NonNull ViewGroup container) {
-
-        final View elementView = createElementViewForElement(element);
-
-        for (ViewHierarchyElementReconstructor reconstructor : reconstructors) {
-            reconstructor.reconstruct(element, elementView);
-        }
-
-        if(elementView instanceof ViewGroup) {
-            for (ViewHierarchyElement child : element.getChildren()) {
-                parseElementIntoView(child, (ViewGroup) elementView);
-            }
-        }
-
-        container.addView(elementView);
-    }
-
-    @NonNull
-    private View createElementViewForElement(@NonNull ViewHierarchyElement viewHierarchyElement) {
-        String rootName = viewHierarchyElement.getFullyQualifiedName();
-        return createInstanceForViewName(rootName, null);
-    }
-
-    @NonNull
-    private View createInstanceForViewName(@NonNull String name,
-                                           @Nullable AttributeSet attributeSet) {
-        try {
-            Class rootClass = Class.forName(name);
-            Constructor[] constructors = rootClass.getConstructors();
-
-            for (Constructor c : constructors) {
-                if (c.getParameterCount() == 2
-                        && c.getParameterTypes()[0] == Context.class
-                        && c.getParameterTypes()[1] == AttributeSet.class) {
-                    return (View) c.newInstance(this, attributeSet);
-                }
-            }
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        throw new RuntimeException();
     }
 }

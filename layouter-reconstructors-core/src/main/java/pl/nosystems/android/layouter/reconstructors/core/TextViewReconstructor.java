@@ -4,7 +4,6 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -12,61 +11,30 @@ import androidx.annotation.Nullable;
 
 import pl.nosystems.android.layouter.core.ViewHierarchyElement;
 import pl.nosystems.android.layouter.core.ViewHierarchyElementAttribute;
-import pl.nosystems.android.layouter.core.ViewHierarchyElementReconstructor;
 
 
-public class TextViewReconstructor implements ViewHierarchyElementReconstructor {
+public class TextViewReconstructor extends ViewReconstructor {
     private static final String TAG = TextViewReconstructor.class.getSimpleName();
+
+    public TextViewReconstructor(float displayDensity) {
+        super(displayDensity);
+    }
 
     @Override
     public void reconstruct(@NonNull ViewHierarchyElement element,
                             @NonNull View elementView) {
-
         // Since this reconstructor works only for TextView - if element is not TextView it has nothing to do
         if(! (elementView instanceof TextView)) {
             return;
         }
+
+        super.reconstruct(element, elementView);
         final TextView textView = (TextView) elementView;
         final Iterable<ViewHierarchyElementAttribute> attributes = element.getAttributes();
 
         ViewHierarchyElementAttribute textAttribute = findAttribute(attributes, "text", "android");
         if(textAttribute != null) {
             textView.setText(textAttribute.getValue());
-        }
-
-        {
-            ViewGroup.LayoutParams layoutParams = textView.getLayoutParams();
-            if (layoutParams == null) {
-                layoutParams = new ViewGroup.LayoutParams(0, 0);
-                textView.setLayoutParams(layoutParams);
-            }
-        }
-        ViewHierarchyElementAttribute layoutWidthAttribute = findAttribute(attributes, "layout_width", "android");
-        if(layoutWidthAttribute != null) {
-            ViewGroup.LayoutParams layoutParams = textView.getLayoutParams();
-            final String width = layoutWidthAttribute.getValue();
-            if(width.equals("wrap_content")) {
-                layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-            } else if (width.equals("match_parent")) {
-                layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            } else {
-                Log.w(TAG, "Failed to set layout_width for value : " + width + " on view " + textView);
-            }
-            textView.setLayoutParams(layoutParams);
-        }
-
-        ViewHierarchyElementAttribute layoutHeightAttribute = findAttribute(attributes, "layout_height", "android");
-        if(layoutHeightAttribute != null) {
-            ViewGroup.LayoutParams layoutParams = textView.getLayoutParams();
-            final String height = layoutHeightAttribute.getValue();
-            if(height.equals("wrap_content")) {
-                layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-            } else if (height.equals("match_parent")) {
-                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            } else {
-                Log.w(TAG, "Failed to set layout_height for value : " + height + " on view " + textView);
-            }
-            textView.setLayoutParams(layoutParams);
         }
 
         ViewHierarchyElementAttribute textSizeAttribute = findAttribute(attributes, "textSize", "android");
@@ -104,7 +72,6 @@ public class TextViewReconstructor implements ViewHierarchyElementReconstructor 
                 }
             }
 
-
             textView.setGravity(gravity);
         }
     }
@@ -112,7 +79,7 @@ public class TextViewReconstructor implements ViewHierarchyElementReconstructor 
 
 
     @Nullable
-    private ViewHierarchyElementAttribute findAttribute(@NonNull Iterable<ViewHierarchyElementAttribute> attributes,
+    protected ViewHierarchyElementAttribute findAttribute(@NonNull Iterable<ViewHierarchyElementAttribute> attributes,
                                                         @NonNull String name,
                                                         @NonNull String namespacePrefix) {
 
