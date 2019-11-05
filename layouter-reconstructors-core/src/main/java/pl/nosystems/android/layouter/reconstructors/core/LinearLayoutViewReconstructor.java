@@ -1,5 +1,6 @@
 package pl.nosystems.android.layouter.reconstructors.core;
 
+import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -13,18 +14,19 @@ import pl.nosystems.android.layouter.core.ViewHierarchyElementAttribute;
 public class LinearLayoutViewReconstructor extends ViewReconstructor {
     private static final String TAG = LinearLayoutViewReconstructor.class.getSimpleName();
 
-    public LinearLayoutViewReconstructor(float displayDensity) {
-        super(displayDensity);
-    }
 
     @Override
-    public void reconstruct(@NonNull ViewHierarchyElement element, @NonNull View elementView) {
+    public void reconstruct(@NonNull ViewHierarchyElement element,
+                            @NonNull View elementView,
+                            @NonNull Context context) {
+
+
         if(! (elementView instanceof LinearLayout)) {
             return;
         }
         final LinearLayout linearLayout = (LinearLayout) elementView;
 
-        super.reconstruct(element, elementView);
+        super.reconstruct(element, elementView, context);
         final Iterable<ViewHierarchyElementAttribute> attributes = element.getAttributes();
         final ViewHierarchyElementAttribute orientationAttribute = findAttribute(attributes, "orientation", "android");
         if(orientationAttribute != null) {

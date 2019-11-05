@@ -12,10 +12,10 @@ import androidx.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+
 /**
  * FIXME: Work In Progress (API)
  */
-@SuppressWarnings("WeakerAccess")
 public class Layouter {
 
     @MainThread
@@ -27,7 +27,7 @@ public class Layouter {
         final View elementView = createElementViewForElement(element, context);
 
         for (ViewHierarchyElementReconstructor reconstructor : reconstructors) {
-            reconstructor.reconstruct(element, elementView);
+            reconstructor.reconstruct(element, elementView, context);
         }
 
         if (elementView instanceof ViewGroup) {

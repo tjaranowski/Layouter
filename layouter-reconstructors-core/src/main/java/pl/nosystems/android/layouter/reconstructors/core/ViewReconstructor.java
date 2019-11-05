@@ -1,5 +1,6 @@
 package pl.nosystems.android.layouter.reconstructors.core;
 
+import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,15 +18,13 @@ import pl.nosystems.android.layouter.core.ViewHierarchyElementReconstructor;
  */
 abstract class ViewReconstructor implements ViewHierarchyElementReconstructor {
     private static final String TAG = ViewReconstructor.class.getSimpleName();
-    private final float displayDensity;
-
-    protected ViewReconstructor(float displayDensity) {
-        this.displayDensity = displayDensity;
-    }
 
     @Override
     public void reconstruct(@NonNull ViewHierarchyElement element,
-                            @NonNull View elementView) {
+                            @NonNull View elementView,
+                            @NonNull Context context) {
+
+        final float displayDensity = context.getResources().getDisplayMetrics().density;
         final Iterable<ViewHierarchyElementAttribute> attributes = element.getAttributes();
 
         // Assert that elementView has LayoutParams.....
@@ -40,20 +39,21 @@ abstract class ViewReconstructor implements ViewHierarchyElementReconstructor {
         ViewHierarchyElementAttribute layoutWidthAttribute = findAttribute(attributes, "layout_width", "android");
         if (layoutWidthAttribute != null) {
             ViewGroup.LayoutParams layoutParams = elementView.getLayoutParams();
-            layoutParams.width = getLayoutDimensionValueFromAttribute(layoutWidthAttribute.getValue(), elementView);
+            layoutParams.width = getLayoutDimensionValueFromAttribute(layoutWidthAttribute.getValue(), elementView, displayDensity);
             elementView.setLayoutParams(layoutParams);
         }
 
         ViewHierarchyElementAttribute layoutHeightAttribute = findAttribute(attributes, "layout_height", "android");
         if (layoutHeightAttribute != null) {
             ViewGroup.LayoutParams layoutParams = elementView.getLayoutParams();
-            layoutParams.height = getLayoutDimensionValueFromAttribute(layoutHeightAttribute.getValue(), elementView);
+            layoutParams.height = getLayoutDimensionValueFromAttribute(layoutHeightAttribute.getValue(), elementView, displayDensity);
             elementView.setLayoutParams(layoutParams);
         }
     }
 
     private int getLayoutDimensionValueFromAttribute(@NonNull String value,
-                                                     @NonNull View elementView) {
+                                                     @NonNull View elementView,
+                                                     float displayDensity) {
         int dimension = 0;
 
         if (value.equals("wrap_content")) {
@@ -75,6 +75,8 @@ abstract class ViewReconstructor implements ViewHierarchyElementReconstructor {
         }
         return dimension;
     }
+
+
 
     @SuppressWarnings("SameParameterValue")
     @Nullable
