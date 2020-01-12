@@ -2,13 +2,14 @@ package pl.nosystems.android.layouter;
 
 import android.content.res.XmlResourceParser;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
-import org.xmlpull.v1.XmlPullParser;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,7 @@ import pl.nosystems.android.layouter.glide.GlideLayouterRequestBuilder;
 import pl.nosystems.android.layouter.reconstructors.core.LinearLayoutViewReconstructor;
 import pl.nosystems.android.layouter.reconstructors.core.SwitchViewReconstructor;
 import pl.nosystems.android.layouter.reconstructors.core.TextViewReconstructor;
+import pl.nosystems.android.layouter.resources.FromXML;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -74,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
 
     private final List<ViewHierarchyElementReconstructor> reconstructors = new ArrayList<>();
 
+    private ViewGroup contentContainer;
+    private Button runLayouterButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,46 +89,55 @@ public class MainActivity extends AppCompatActivity {
         reconstructors.add(new SwitchViewReconstructor());
 
 
-        final ViewGroup viewGroup = findViewById(R.id.contentContainer);
-        final SAXReader saxReader = new SAXReader();
-        final GlideLayouter glideLayouter = GlideLayouterBuilder
-                .instance()
-                .withReconstructors(reconstructors)
-                .build();
+        contentContainer = findViewById(R.id.contentContainer);
+        runLayouterButton = findViewById(R.id.runLayouterButton);
 
-        final LayouterDom4J layouterDom4J = LayouterDom4JBuilder
-                .instance()
-                .build();
+        runLayouterButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final SAXReader saxReader = new SAXReader();
+                final GlideLayouter glideLayouter = GlideLayouterBuilder
+                        .instance()
+                        .withReconstructors(reconstructors)
+                        .build();
 
-        final XmlResourceParser layout = getResources().getLayout(R.layout.xml_pull_parser_test);
+                final LayouterDom4J layouterDom4J = LayouterDom4JBuilder
+                        .instance()
+                        .build();
 
-
-        final ViewHierarchyElement parse = new FromXML().parse(layout);
-
-        final GlideLayouterRequestBuilder<Document> requestBuilder = glideLayouter
-                .startBuildingRequestFrom(() -> TEST_LAYOUT)
-                .withRawDataTransformator(s -> saxReader.read(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8))))
-                .withRawDataDecoder(layouterDom4J::createElementsFromDom4JDocument)
-                .into(viewGroup);
-
-        glideLayouter.queueRequest(requestBuilder.build());
+                final XmlResourceParser layout = getResources().getLayout(R.layout.xml_pull_parser_test);
 
 
-        final GlideLayouterRequestBuilder<Document> requestBuilder2 = glideLayouter
-                .startBuildingRequestFrom(() -> TEST)
-                .withRawDataTransformator(s -> saxReader.read(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8))))
-                .withRawDataDecoder(layouterDom4J::createElementsFromDom4JDocument)
-                .into(viewGroup);
+                final ViewHierarchyElement parse = new FromXML().parse(layout);
 
-        glideLayouter.queueRequest(requestBuilder2.build());
+                final GlideLayouterRequestBuilder<Document> requestBuilder = glideLayouter
+                        .startBuildingRequestFrom(() -> TEST_LAYOUT)
+                        .withRawDataTransformator(s -> saxReader.read(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8))))
+                        .withRawDataDecoder(layouterDom4J::createElementsFromDom4JDocument)
+                        .into(contentContainer);
 
-        final GlideLayouterRequest request3 = glideLayouter.startBuildingRequestFrom(() -> parse)
-                .withRawDataDecoder(s -> s)
-                .into(viewGroup)
-                .build();
+                glideLayouter.queueRequest(requestBuilder.build());
 
-        glideLayouter.queueRequest(request3);
 
+                final GlideLayouterRequestBuilder<Document> requestBuilder2 = glideLayouter
+                        .startBuildingRequestFrom(() -> TEST)
+                        .withRawDataTransformator(s -> saxReader.read(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8))))
+                        .withRawDataDecoder(layouterDom4J::createElementsFromDom4JDocument)
+                        .into(contentContainer);
+
+                glideLayouter.queueRequest(requestBuilder2.build());
+
+                final GlideLayouterRequest request3 = glideLayouter.startBuildingRequestFrom(() -> parse)
+                        .withRawDataDecoder(s -> {
+                            Thread.sleep(1000);
+                            return s;
+                        })
+                        .into(contentContainer)
+                        .build();
+
+                glideLayouter.queueRequest(request3);
+            }
+        });
 
 
         /*
@@ -132,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
                 .from(Uri.parse("https://nosystems.pl/layouter/sample.xml"))
                 .withDecoder(o -> LayouterDom4JBuilder.instance().build().createElementsFromDom4JDocument(o))
                 .withPlaceholderLayout(R.layout.support_simple_spinner_dropdown_item)
-                .into(viewGroup);
+                .into(contentContainer);
 
 
         SAXReader saxReader = new SAXReader();
@@ -145,11 +159,11 @@ public class MainActivity extends AppCompatActivity {
 
             ViewHierarchyElement viewHierarchyElement = layouterDom4J.createElementsFromDom4JDocument(document);
 
-            // FIXME: is return value needed? <- currently will add to viewGroup anyways/........
+            // FIXME: is return value needed? <- currently will add to contentContainer anyways/........
             LayouterBuilder
                     .instance()
                     .build()
-                    .parseElementIntoView(viewHierarchyElement, reconstructors, viewGroup, this);
+                    .parseElementIntoView(viewHierarchyElement, reconstructors, contentContainer, this);
 
         } catch (DocumentException e) {
             throw new RuntimeException(e);

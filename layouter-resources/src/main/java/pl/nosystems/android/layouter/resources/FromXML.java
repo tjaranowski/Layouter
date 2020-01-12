@@ -1,4 +1,4 @@
-package pl.nosystems.android.layouter;
+package pl.nosystems.android.layouter.resources;
 
 import android.content.res.XmlResourceParser;
 
@@ -47,7 +47,7 @@ public class FromXML {
         @NonNull
         @Override
         public <E extends Throwable> T getOrElseThrow(@NonNull Supplier<? extends E> exceptionSupplier) throws E {
-            if(isPresent()) {
+            if (isPresent()) {
                 return requireNonNull(value);
             }
             throw exceptionSupplier.get();
@@ -129,7 +129,7 @@ public class FromXML {
         }
     }
 
-    ViewHierarchyElement parse(@NonNull XmlResourceParser xmlResourceParser) {
+    public ViewHierarchyElement parse(@NonNull XmlResourceParser xmlResourceParser) {
         ViewHierarchyElementImpl root = null;
         ViewHierarchyElementImpl currentElement = null;
 
@@ -139,26 +139,26 @@ public class FromXML {
             int eventType = parser.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
 
-                if(eventType == XmlPullParser.START_TAG) {
+                if (eventType == XmlPullParser.START_TAG) {
 
                     final String name = resolveName(parser.getName()); // Linear layout ?
 
-                    if(currentElement == null && root == null) {
+                    if (currentElement == null && root == null) {
                         root = currentElement = new ViewHierarchyElementImpl(
                                 name,
-                                OptionalImpl.ofNothing(),
-                                new ArrayList<>(),
-                                new ArrayList<>()
+                                OptionalImpl.<ViewHierarchyElement>ofNothing(),
+                                new ArrayList<ViewHierarchyElement>(),
+                                new ArrayList<ViewHierarchyElementAttribute>()
                         );
-                    } else if(currentElement == null) {
+                    } else if (currentElement == null) {
                         throw new RuntimeException("Internal error!");
                     } else {
                         ViewHierarchyElementImpl parent = currentElement;
                         currentElement = new ViewHierarchyElementImpl(
                                 name,
-                                OptionalImpl.ofValue(parent),
-                                new ArrayList<>(),
-                                new ArrayList<>()
+                                OptionalImpl.<ViewHierarchyElement>ofValue(parent),
+                                new ArrayList<ViewHierarchyElement>(),
+                                new ArrayList<ViewHierarchyElementAttribute>()
                         );
                         parent.getChildrenAsList().add(currentElement);
                     }
@@ -169,11 +169,11 @@ public class FromXML {
                         final String attributeValue = parser.getAttributeValue(i);
 
                         String attributeNamespace = parser.getAttributeNamespace(i);
-                        if(attributeNamespace.equals(ANDROID_ATTRIBUTE_NAMESPACE)) {
+                        if (attributeNamespace.equals(ANDROID_ATTRIBUTE_NAMESPACE)) {
                             attributeNamespace = "android";
                         }
 
-                        String finalAttributeNamespace = attributeNamespace;
+                        final String finalAttributeNamespace = attributeNamespace;
                         ViewHierarchyElementAttribute attribute = new ViewHierarchyElementAttribute() {
                             @NonNull
                             @Override
@@ -197,11 +197,15 @@ public class FromXML {
                     }
 
 
-
                 } else if (eventType == XmlPullParser.END_TAG) {
                     final Optional<ViewHierarchyElement> parent = requireNonNull(currentElement).getParent();
-                    if(parent.isPresent()) {
-                        currentElement = (ViewHierarchyElementImpl) parent.getOrElseThrow(RuntimeException::new);
+                    if (parent.isPresent()) {
+                        currentElement = (ViewHierarchyElementImpl) parent.getOrElseThrow(new Supplier<Throwable>() {
+                            @Override
+                            public Throwable get() {
+                                return new RuntimeException();
+                            }
+                        });
                     } else {
                         currentElement = null;
                     }
@@ -209,9 +213,9 @@ public class FromXML {
                 }
                 eventType = parser.next();
             }
-            
+
             return root;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }

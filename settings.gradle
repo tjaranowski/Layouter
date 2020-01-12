@@ -1,2 +1,2 @@
-include ':app', ':layouter', ':layouter-dom4j', ':layouter-reconstructors-core', ':layouter-glide'
+include ':app', ':layouter', ':layouter-dom4j', ':layouter-reconstructors-core', ':layouter-glide', ':layouter-resources'
 rootProject.name='Layouter'

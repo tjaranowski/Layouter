@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Layouter</string>
+    <string name="run_layouter">Run Layouter</string>
 </resources>

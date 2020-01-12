@@ -26,6 +26,7 @@ dependencies {
     implementation project(":layouter")
     implementation project(":layouter-dom4j")
     implementation project(":layouter-glide")
+    implementation project(":layouter-resources")
     implementation project(":layouter-reconstructors-core")
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
