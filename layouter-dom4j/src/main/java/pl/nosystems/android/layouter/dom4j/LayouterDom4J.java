@@ -1,6 +1,8 @@
 package pl.nosystems.android.layouter.dom4j;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
@@ -14,17 +16,31 @@ import pl.nosystems.android.layouter.core.ViewHierarchyElementAttribute;
 
 
 public class LayouterDom4J {
-
     @NonNull
-    public static ViewHierarchyElement createElementsFromDom4JDocument(@NonNull Document document) {
-        final Element rootElement = document.getRootElement();
+    private final FullyQualifiedNameResolver fullyQualifiedNameResolver;
 
-        return convertDom4JToInternal(rootElement);
+    LayouterDom4J() {
+        this.fullyQualifiedNameResolver = new AndroidNameResolver();
     }
 
 
+    @AnyThread
     @NonNull
-    private static ViewHierarchyElement convertDom4JToInternal(@NonNull Element element) {
+    public ViewHierarchyElement createElementsFromDom4JDocument(@NonNull Document document) {
+        final Element rootElement = document.getRootElement();
+
+        if (rootElement == null) {
+            throw new RuntimeException("Document is required to have root element but instance passed does not have one!");
+        }
+
+        return convertDom4JToInternal(null, rootElement);
+    }
+
+
+    @AnyThread
+    @NonNull
+    private ViewHierarchyElement convertDom4JToInternal(@Nullable final ViewHierarchyElement parent,
+                                                        @NonNull Element element) {
         String name = element.getName();
 
         if (!isFullyQualifiedName(name)) {
@@ -32,7 +48,7 @@ public class LayouterDom4J {
         }
 
         final List<ViewHierarchyElementAttribute> attributes = new ArrayList<>();
-        for(final Attribute attribute : element.attributes()) {
+        for (final Attribute attribute : element.attributes()) {
 
             final String attributeName = attribute.getName();
             final String attributeNamespacePrefix = attribute.getNamespacePrefix();
@@ -60,52 +76,25 @@ public class LayouterDom4J {
 
         final String finalName = name;
         final List<ViewHierarchyElement> children = new ArrayList<>();
-        for(Element e : element.elements()) {
-            children.add(convertDom4JToInternal(e));
+        final ViewHierarchyElement viewHierarchyElement = new ViewHierarchyElementImpl(
+                finalName,
+                new OptionalImpl<>(parent),
+                children,
+                attributes);
+
+        for (Element e : element.elements()) {
+            children.add(convertDom4JToInternal(viewHierarchyElement, e));
         }
-        return new ViewHierarchyElement() {
-            @NonNull
-            @Override
-            public String getFullyQualifiedName() {
-                return finalName;
-            }
-
-            @NonNull
-            @Override
-            public Iterable<ViewHierarchyElement> getChildren() {
-                return children;
-            }
-
-            @NonNull
-            @Override
-            public Iterable<ViewHierarchyElementAttribute> getAttributes() {
-                return attributes;
-            }
-        };
+        return viewHierarchyElement;
     }
 
+    @AnyThread
     @NonNull
-    private static String toFullyQualifiedName(@NonNull String name) {
-        try {
-            String tmpName = "android.widget." + name;
-            Class.forName(tmpName);
-            return tmpName;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-
-        try {
-            String tmpName = "android.view." + name;
-            Class.forName(tmpName);
-            return tmpName;
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+    private String toFullyQualifiedName(@NonNull String name) {
+        return fullyQualifiedNameResolver.resolveName(name);
     }
 
     private static boolean isFullyQualifiedName(@NonNull String name) {
         return name.contains(".");
     }
-
 }

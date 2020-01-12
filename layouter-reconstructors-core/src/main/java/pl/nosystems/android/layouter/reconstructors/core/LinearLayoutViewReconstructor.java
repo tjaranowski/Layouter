@@ -36,8 +36,21 @@ public class LinearLayoutViewReconstructor extends ViewReconstructor {
             } else if(orientationValue.equals("horizontal")) {
                 linearLayout.setOrientation(LinearLayout.HORIZONTAL);
             } else {
-                Log.w(TAG, "Cannot apply orientation of value " + orientationValue + " to linear layout!");
+                if (isInteger(orientationValue)) {
+                    linearLayout.setOrientation(Integer.parseInt(orientationValue));
+                } else {
+                    Log.w(TAG, "Cannot apply orientation of value " + orientationValue + " to linear layout!");
+                }
             }
+        }
+    }
+
+    private boolean isInteger(@NonNull String value) {
+        try {
+            Integer.parseInt(value);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 }

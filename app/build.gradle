@@ -25,6 +25,7 @@ android {
 dependencies {
     implementation project(":layouter")
     implementation project(":layouter-dom4j")
+    implementation project(":layouter-glide")
     implementation project(":layouter-reconstructors-core")
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
@@ -32,6 +33,7 @@ dependencies {
     implementation 'com.annimon:stream:1.2.1'
     //noinspection GradleDependency
     implementation 'org.dom4j:dom4j:2.0.2'
+    implementation 'net.sf.kxml:kxml2:2.3.0'
 
     testImplementation 'junit:junit:4.12'
 

@@ -14,6 +14,14 @@ public interface ViewHierarchyElement {
     /**
      * FIXME: Work In Progress
      *
+     * @return
+     */
+    @NonNull
+    Optional<ViewHierarchyElement> getParent();
+
+    /**
+     * FIXME: Work In Progress
+     *
      * @return iterable of children. If none, iterable will be empty.
      */
     @NonNull

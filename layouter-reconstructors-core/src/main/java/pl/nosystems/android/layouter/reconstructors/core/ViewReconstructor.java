@@ -69,6 +69,10 @@ abstract class ViewReconstructor implements ViewHierarchyElementReconstructor {
                 if(unit.equals("dp")) {
                     return (int) (Integer.parseInt(val) * displayDensity);
                 }
+            } else {
+                if(isInteger(value)) {
+                    return Integer.parseInt(value);
+                }
             }
 
             Log.w(TAG, "Failed to set dimension attribute for value : " + value + " on view " + elementView);
@@ -76,6 +80,14 @@ abstract class ViewReconstructor implements ViewHierarchyElementReconstructor {
         return dimension;
     }
 
+    private boolean isInteger(@NonNull String string) {
+        try {
+            Integer.parseInt(string);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 
 
     @SuppressWarnings("SameParameterValue")

@@ -1,6 +1,7 @@
 package pl.nosystems.android.layouter.reconstructors.core;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -31,7 +32,7 @@ public class TextViewReconstructor extends ViewReconstructor {
         final TextView textView = (TextView) elementView;
         final Iterable<ViewHierarchyElementAttribute> attributes = element.getAttributes();
 
-        reconstructText(textView, attributes);
+        reconstructText(textView, attributes, context);
         reconstructTextSize(textView, attributes);
         reconstructGravity(textView, attributes);
     }
@@ -99,7 +100,7 @@ public class TextViewReconstructor extends ViewReconstructor {
                 } else if (possibleType.equals("px")) {
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, Integer.parseInt(possibleValue));
                 } else if (possibleType.equals("sp")) {
-                    textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, Integer.parseInt(possibleValue));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, Float.parseFloat(possibleValue));
                 } else {
                     Log.w(TAG, "Failed to apply property textSize to view: " + textView);
                 }
@@ -108,11 +109,18 @@ public class TextViewReconstructor extends ViewReconstructor {
     }
 
     private void reconstructText(@NonNull TextView textView,
-                                 @NonNull Iterable<ViewHierarchyElementAttribute> attributes) {
+                                 @NonNull Iterable<ViewHierarchyElementAttribute> attributes,
+                                 @NonNull Context context) {
 
         final ViewHierarchyElementAttribute textAttribute = findAttribute(attributes, "text", "android");
         if (textAttribute != null) {
-            textView.setText(textAttribute.getValue());
+            final String value = textAttribute.getValue();
+            if (value.contains("@string")) {
+                final Resources resources = context.getResources();
+                textView.setText(resources.getIdentifier(value,null, context.getPackageName()));
+            } else {
+                textView.setText(textAttribute.getValue());
+            }
         }
     }
 
