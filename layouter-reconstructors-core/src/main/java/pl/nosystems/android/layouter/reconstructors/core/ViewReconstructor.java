@@ -49,6 +49,14 @@ abstract class ViewReconstructor implements ViewHierarchyElementReconstructor {
             layoutParams.height = getLayoutDimensionValueFromAttribute(layoutHeightAttribute.getValue(), elementView, displayDensity);
             elementView.setLayoutParams(layoutParams);
         }
+
+        ViewHierarchyElementAttribute idAttribute = findAttribute(attributes, "id", "android");
+        if (idAttribute != null) {
+            String id = idAttribute.getValue().substring(1);
+            if(isInteger(id)) {
+                elementView.setId(Integer.parseInt(id));
+            }
+        }
     }
 
     private int getLayoutDimensionValueFromAttribute(@NonNull String value,

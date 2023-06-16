@@ -1,10 +1,12 @@
 package pl.nosystems.android.layouter.glide;
 
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 import pl.nosystems.android.layouter.core.ViewHierarchyElement;
 
@@ -12,6 +14,8 @@ import static java.util.Objects.requireNonNull;
 
 
 public class GlideLayouterRequestBuilder<RawDataType> {
+    private Consumer<View> callback;
+
     private Callable<RawDataType> dataProvider;
     private ViewGroup target;
     private FunctionThatThrows<RawDataType, ViewHierarchyElement> decoder;
@@ -26,6 +30,12 @@ public class GlideLayouterRequestBuilder<RawDataType> {
     @NonNull
     public GlideLayouterRequestBuilder<RawDataType> into(@NonNull ViewGroup viewGroup) {
         this.target = requireNonNull(viewGroup);
+        return this;
+    }
+
+    @NonNull
+    public GlideLayouterRequestBuilder<RawDataType> withCallback(@NonNull Consumer<View> callback) {
+        this.callback = requireNonNull(callback);
         return this;
     }
 
@@ -58,18 +68,13 @@ public class GlideLayouterRequestBuilder<RawDataType> {
 
     @NonNull
     public GlideLayouterRequest build() {
-        Callable<ViewHierarchyElement> provider = new Callable<ViewHierarchyElement>() {
-            @Override
-            public ViewHierarchyElement call() {
-                try {
-
-                    return decoder.apply(dataProvider.call());
-                } catch (Throwable throwable) {
-                    throw new RuntimeException(throwable);
-                }
+        Callable<ViewHierarchyElement> provider = () -> {
+            try {
+                return decoder.apply(dataProvider.call());
+            } catch (Throwable throwable) {
+                throw new RuntimeException(throwable);
             }
         };
-        return new GlideLayouterRequest(provider, target) {
-        };
+        return new GlideLayouterRequest(provider, target, callback);
     }
 }

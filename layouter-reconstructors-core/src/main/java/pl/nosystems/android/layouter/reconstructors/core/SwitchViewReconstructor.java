@@ -32,8 +32,6 @@ public class SwitchViewReconstructor extends CompoundButtonReconstructor {
 
         reconstructThumb(switchView, attributes, context);
         reconstructTrack(switchView, attributes, context);
-        //reconstructThumbTint(switchView, attributes, context); FIXME: requires API 23 for 'easy' version....
-        //reconstructTrackTint(switchView, attributes, context); FIXME: not implemeneted
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -55,8 +53,6 @@ public class SwitchViewReconstructor extends CompoundButtonReconstructor {
                     return;
                 }
             } else if(attributeValue.length() > 0 && attributeValue.charAt(0) == '#') {
-                // Literal color
-                // FIXME
                 Log.w(TAG, "thumbTint literal color not implememeted!");
                 return;
             }
@@ -75,6 +71,8 @@ public class SwitchViewReconstructor extends CompoundButtonReconstructor {
             if (attributeValue.length() > 0 && attributeValue.charAt(0) == '@') {
                 // Drawable resource?
                 final String[] attributeParts = attributeValue.split("/");
+                if(attributeParts.length != 2)
+                    return;
                 final String defType = attributeParts[0].substring(1);
                 final String defValue = attributeParts[1];
                 final int resID = context.getResources().getIdentifier(defValue, defType, context.getPackageName());
@@ -93,6 +91,8 @@ public class SwitchViewReconstructor extends CompoundButtonReconstructor {
             if (attributeValue.length() > 0 && attributeValue.charAt(0) == '@') {
                 // Drawable resource?
                 final String[] attributeParts = attributeValue.split("/");
+                if(attributeParts.length != 2)
+                    return;
                 final String defType = attributeParts[0].substring(1);
                 final String defValue = attributeParts[1];
                 final int resID = context.getResources().getIdentifier(defValue, defType, context.getPackageName());

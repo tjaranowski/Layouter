@@ -1,27 +1,35 @@
 package pl.nosystems.android.layouter.glide;
 
+import static java.util.Objects.requireNonNull;
+
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 import pl.nosystems.android.layouter.core.ViewHierarchyElement;
 
-import static java.util.Objects.requireNonNull;
 
-
-public abstract class GlideLayouterRequest {
+public class GlideLayouterRequest {
     @NonNull
     private final Callable<ViewHierarchyElement> dataProvider;
 
     @NonNull
     private final ViewGroup target;
 
+    @Nullable
+    private final Consumer<View> callback;
+
     GlideLayouterRequest(@NonNull Callable<ViewHierarchyElement> dataProvider,
-                         @NonNull ViewGroup target) {
+                         @NonNull ViewGroup target,
+                         @Nullable Consumer<View> callback) {
         this.dataProvider = requireNonNull(dataProvider);
         this.target = requireNonNull(target);
+        this.callback = callback;
     }
 
     @NonNull
@@ -32,5 +40,10 @@ public abstract class GlideLayouterRequest {
     @NonNull
     ViewGroup getTarget() {
         return target;
+    }
+
+    @Nullable
+    public Consumer<View> getDoneCallback() {
+        return callback;
     }
 }

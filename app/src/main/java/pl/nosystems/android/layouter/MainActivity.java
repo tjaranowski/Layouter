@@ -2,9 +2,12 @@ package pl.nosystems.android.layouter;
 
 import android.content.res.XmlResourceParser;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Switch;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,6 +21,7 @@ import java.util.List;
 
 import pl.nosystems.android.layouter.core.ViewHierarchyElement;
 import pl.nosystems.android.layouter.core.ViewHierarchyElementReconstructor;
+import pl.nosystems.android.layouter.core.ViewTools;
 import pl.nosystems.android.layouter.dom4j.LayouterDom4J;
 import pl.nosystems.android.layouter.dom4j.LayouterDom4JBuilder;
 import pl.nosystems.android.layouter.glide.GlideLayouter;
@@ -31,53 +35,9 @@ import pl.nosystems.android.layouter.resources.FromXML;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TEST_LAYOUT = "" +
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-            "<LinearLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\n" +
-            "    xmlns:tools=\"http://schemas.android.com/tools\"\n" +
-            "    android:layout_width=\"match_parent\"\n" +
-            "    android:layout_height=\"match_parent\"\n" +
-            "    android:orientation=\"vertical\"\n" +
-            "    tools:context=\".MainActivity\">\n" +
-            "\n" +
-            "    <EditText\n" +
-            "        android:layout_width=\"match_parent\"\n" +
-            "        android:layout_height=\"64dp\" />\n" +
-            "\n" +
-            "    <Switch\n" +
-            "        android:id=\"@+id/switch1\"\n" +
-            "        android:layout_width=\"match_parent\"\n" +
-            "        android:layout_height=\"wrap_content\"\n" +
-            "        android:gravity=\"left\"\n" +
-            "        android:layout_gravity=\"left\"\n" +
-            "        android:thumbTint=\"@color/colorPrimary\"" +
-            "        android:thumb=\"@mipmap/ic_launcher\"/>\n" +
-            "\n" +
-            "    <TextView\n" +
-            "        android:layout_width=\"match_parent\"\n" +
-            "        android:layout_height=\"match_parent\"\n" +
-            "        android:layout_gravity=\"center\"\n" +
-            "        android:gravity=\"center\"\n" +
-            "        android:text=\"Hello World!\"\n" +
-            "        android:textSize=\"48sp\" />\n" +
-            "\n" +
-            "</LinearLayout>";
-
-    private static final String TEST = "" +
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-            "<TextView xmlns:android=\"http://schemas.android.com/apk/res/android\"\n" +
-            "    android:id=\"@+id/foo\"\n" +
-            "    android:layout_width=\"match_parent\"\n" +
-            "    android:layout_height=\"wrap_content\"\n" +
-            "    android:orientation=\"vertical\"\n" +
-            "    android:text=\"@string/app_name\">\n" +
-            "\n" +
-            "</TextView>";
-
     private final List<ViewHierarchyElementReconstructor> reconstructors = new ArrayList<>();
 
     private ViewGroup contentContainer;
-    private Button runLayouterButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         contentContainer = findViewById(R.id.contentContainer);
-        runLayouterButton = findViewById(R.id.runLayouterButton);
+        Button runLayouterButton = findViewById(R.id.runLayouterButton);
 
         runLayouterButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -110,19 +70,38 @@ public class MainActivity extends AppCompatActivity {
 
                 final ViewHierarchyElement parse = new FromXML().parse(layout);
 
-                final GlideLayouterRequestBuilder<Document> requestBuilder = glideLayouter
-                        .startBuildingRequestFrom(() -> TEST_LAYOUT)
-                        .withRawDataTransformator(s -> saxReader.read(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8))))
-                        .withRawDataDecoder(layouterDom4J::createElementsFromDom4JDocument)
+                final GlideLayouterRequestBuilder<ViewHierarchyElement> requestBuilder = glideLayouter
+                        .startBuildingRequestFrom(() ->
+                                new FromXML()
+                                .parse(getResources()
+                                        .getLayout(R.layout.activity_main))
+                        )
+                        .withRawDataDecoder(s -> s)
+                        .withCallback(view -> {
+                            if(view instanceof ViewGroup) {
+                                ArrayList<Class<? extends View>> types = new ArrayList<>();
+                                types.add(Switch.class);
+                                ViewGroup vg = (ViewGroup) view;
+                                List<View> viewsOfType = ViewTools.findViewsOfType(vg, types);
+                                for (View switchView :viewsOfType){
+                                    ((Switch)switchView).setOnCheckedChangeListener((compoundButton, b) -> {
+                                        Toast.makeText(compoundButton.getContext(), "Switch check state: " + b, Toast.LENGTH_SHORT).show();
+                                    });
+                                }
+                            }
+                        })
                         .into(contentContainer);
 
                 glideLayouter.queueRequest(requestBuilder.build());
 
 
-                final GlideLayouterRequestBuilder<Document> requestBuilder2 = glideLayouter
-                        .startBuildingRequestFrom(() -> TEST)
-                        .withRawDataTransformator(s -> saxReader.read(new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8))))
-                        .withRawDataDecoder(layouterDom4J::createElementsFromDom4JDocument)
+                final GlideLayouterRequestBuilder<ViewHierarchyElement> requestBuilder2 = glideLayouter
+                        .startBuildingRequestFrom(() ->
+                                new FromXML()
+                                        .parse(getResources()
+                                                .getLayout(R.layout.test))
+                        )
+                        .withRawDataDecoder(s -> s)
                         .into(contentContainer);
 
                 glideLayouter.queueRequest(requestBuilder2.build());
@@ -135,38 +114,8 @@ public class MainActivity extends AppCompatActivity {
                         .into(contentContainer)
                         .build();
 
-                glideLayouter.queueRequest(request3);
+                //glideLayouter.queueRequest(request3);
             }
         });
-
-
-        /*
-        GlideLayouter
-                .<Document>under(this)
-                .from(Uri.parse("https://nosystems.pl/layouter/sample.xml"))
-                .withDecoder(o -> LayouterDom4JBuilder.instance().build().createElementsFromDom4JDocument(o))
-                .withPlaceholderLayout(R.layout.support_simple_spinner_dropdown_item)
-                .into(contentContainer);
-
-
-        SAXReader saxReader = new SAXReader();
-        try {
-            Document document = saxReader.read(new ByteArrayInputStream(TEST_LAYOUT.getBytes(StandardCharsets.UTF_8)));
-
-            LayouterDom4J layouterDom4J = LayouterDom4JBuilder
-                    .instance()
-                    .build();
-
-            ViewHierarchyElement viewHierarchyElement = layouterDom4J.createElementsFromDom4JDocument(document);
-
-            // FIXME: is return value needed? <- currently will add to contentContainer anyways/........
-            LayouterBuilder
-                    .instance()
-                    .build()
-                    .parseElementIntoView(viewHierarchyElement, reconstructors, contentContainer, this);
-
-        } catch (DocumentException e) {
-            throw new RuntimeException(e);
-        }*/
     }
 }

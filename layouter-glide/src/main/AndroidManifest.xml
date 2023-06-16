@@ -1,2 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="pl.nosystems.android.layouter.glide" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

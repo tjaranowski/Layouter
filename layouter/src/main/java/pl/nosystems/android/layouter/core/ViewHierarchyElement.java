@@ -11,27 +11,12 @@ public interface ViewHierarchyElement {
     @NonNull
     String getFullyQualifiedName();
 
-    /**
-     * FIXME: Work In Progress
-     *
-     * @return
-     */
     @NonNull
     Optional<ViewHierarchyElement> getParent();
 
-    /**
-     * FIXME: Work In Progress
-     *
-     * @return iterable of children. If none, iterable will be empty.
-     */
     @NonNull
     Iterable<ViewHierarchyElement> getChildren();
 
-    /**
-     * FIXME: Work In Progress  (API)
-     *
-     * @return
-     */
     @NonNull
     Iterable<ViewHierarchyElementAttribute> getAttributes();
 }
